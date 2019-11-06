@@ -14,19 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    universitymodel.cpp \
-    peoplemodel.cpp \
     countrymodel.cpp \
-    regionmodel.cpp \
-    districtmodel.cpp \
-    citymodel.cpp
+    regionmodel.cpp
 
 HEADERS  += mainwindow.h \
-    universitymodel.h \
-    peoplemodel.h \
     countrymodel.h \
-    regionmodel.h \
-    districtmodel.h \
-    citymodel.h
+    regionmodel.h
 
 FORMS    += mainwindow.ui

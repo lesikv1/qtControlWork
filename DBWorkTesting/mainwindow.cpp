@@ -15,47 +15,33 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    userLogin="login";
-    userPassword="password";
-    userHost="localhost";
-    localPortDB=3306;
+    userLogin="csduser_01";
+    userPassword="Nx16bx8";
+    userHost="178.74.209.90";
+    localPortDB=53306;
     remotePort=2233;
-    sshTunelConfigForDB ="ssh\\plink -P %1 -L %2:localhost:3306 %3@%4 -N -pw %5 < ssh\\config.ini";
 
     db=QSqlDatabase::addDatabase("QMYSQL");
-    db.setDatabaseName("donnu");
-    db.setHostName("localhost");
-    db.setUserName(userLogin);
-    db.setPassword(userPassword);
-    db.setPort(localPortDB);
+    db.setHostName("178.74.209.90");
+    db.setPort(53306);
+    db.setDatabaseName("CSD_db1");
+    db.setUserName("csduser_01");
+    db.setPassword("Nx16bx8");
 
 }
 
 MainWindow::~MainWindow()
 {
-    delete peopleModel;
-    delete universityModel;
     delete countryModel;
     delete regionModel;
-    delete districtModel;
-    delete cityModel;
     delete ui;
 }
 
 void MainWindow::on_connectButton_released()
 {
-    QString msgDB;
-    msgDB=sshTunelConfigForDB.arg(remotePort).arg(localPortDB).arg(userLogin).arg(userHost).arg(userPassword);
-    qDebug()<<msgDB;
-    dbTunel.start(msgDB);
     int i;
 
-    for(i=0;i<30;i++)
-      {
-        DBConnectionState = db.open();
-        if(true==DBConnectionState)
-            break;
-      }
+    DBConnectionState = db.open();
 
     if(true==DBConnectionState)
        {
@@ -68,14 +54,6 @@ void MainWindow::on_connectButton_released()
          regionModel = new RegionModel(this, db);
          ui->table_region->setModel(regionModel);
          ui->table_region->resizeColumnsToContents();
-
-         districtModel = new DistrictModel(this, db);
-         ui->table_district->setModel(districtModel);
-         ui->table_district->resizeColumnsToContents();
-
-         cityModel = new CityModel(this, db);
-         ui->table_cities->setModel(cityModel);
-         ui->table_cities->resizeColumnsToContents();
 
        }
     else
@@ -94,13 +72,6 @@ void MainWindow::on_connectButton_released()
 void MainWindow::on_disconectButton_released()
 {
     db.close();
-    dbTunel.close();
-}
-
-void MainWindow::on_updateButton_released()
-{
-    countryModel->select();
-    regionModel->select();
 }
 
 void MainWindow::on_add_country_released()
@@ -116,7 +87,7 @@ void MainWindow::on_add_country_released()
     add.bindValue(":citizenship_name", citizenship_name);
 
     if (!add.exec()) {
-        ui->text_notification->append("error pre adding new element in table county");
+        qDebug() << "error";
     }
 
     countryModel->select();
@@ -134,22 +105,12 @@ void MainWindow::on_delete_country_released()
         QSqlQuery query(db);
 
         if (!query.exec(sql)) {
-            ui->text_notification->append("Error pre delete element from table country");
+            qDebug() << "error";
         }
     }
 
         countryModel->select();
 
-}
-
-void MainWindow::on_save_to_file_released()
-{
-    QString fileName = QFileDialog::getSaveFileName(this,tr("Save file"), "",tr("Txt(*.txt)"));
-    QFile file(fileName);
-    file.open(QIODevice::WriteOnly);
-    QTextStream out(&file);
-    out<<ui->text_notification->toPlainText();
-    file.close();
 }
 
 void MainWindow::on_add_region_released()
@@ -165,7 +126,7 @@ void MainWindow::on_add_region_released()
     add.bindValue(":cauntry_id_name", cauntry_id_name);
 
     if (!add.exec()) {
-        ui->text_notification->append("error pre adding new element in table region");
+        qDebug() << "error";
     }
 
     regionModel->select();
@@ -182,88 +143,73 @@ void MainWindow::on_delete_region_released()
         sql = sql.arg(Id);
         QSqlQuery query(db);
 
+
         if (!query.exec(sql)) {
-            ui->text_notification->append("Error pre delete element from table region");
+            qDebug() << "error";
         }
     }
 
         regionModel->select();
 }
 
-void MainWindow::on_button_add_district_released()
+
+
+void MainWindow::on_update_region_released()
 {
-    QSqlQuery add;
-    add.prepare("INSERT INTO district (district, region_id) "
-                      "VALUES (:district_name, :region_id_name)");
-
-    QString district_name = ui->input_district->text();
-    QString region_id_name = ui->input_region_id->text();
-
-    add.bindValue(":district_name", district_name);
-    add.bindValue(":region_id_name", region_id_name);
-
-    if (!add.exec()) {
-        ui->text_notification->append("error pre adding new element in table district");
-    }
-
-    districtModel->select();
+    regionModel->select();
 }
 
-void MainWindow::on_button_delete_district_released()
+void MainWindow::on_update_country_released()
 {
-    QModelIndex field = ui->table_district->currentIndex();
+    countryModel->select();
+}
 
-    if(field.isValid()){
-        QSqlRecord record = districtModel->record(field.row());
-        int Id = record.value(0).toInt();
-        QString sql = "DELETE FROM district WHERE district_id=%1;";
-        sql = sql.arg(Id);
-        QSqlQuery query(db);
+void MainWindow::on_save_to_file_region_released()
+{
+    QString fileName = QFileDialog::getSaveFileName(this,tr("Save file"), "",tr("Txt(*.txt)"));
+    QFile file(fileName);
+    file.open(QIODevice::WriteOnly);
 
-        if (!query.exec(sql)) {
-            ui->text_notification->append("Error pre delete element from table district");
+    QString textData;
+    int rows = ui->table_region->model()->rowCount();
+    int columns = ui->table_region->model()->columnCount();
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+
+                textData += ui->table_region->model()->data(ui->table_region->model()->index(i,j)).toString();
+                textData += ", ";
         }
+        textData += "\n";
     }
+    qDebug() << textData;
 
-        districtModel->select();
+    QTextStream out(&file);
+    out<<textData;
+    file.close();
 }
 
-void MainWindow::on_button_add_city_released()
+void MainWindow::on_save_to_file_country_released()
 {
-    QSqlQuery add;
-    add.prepare("INSERT INTO city (city, phone_kod, district_id) "
-                      "VALUES (:city_name, :phone_kod_name, :district_id_name)");
+    QString fileName = QFileDialog::getSaveFileName(this,tr("Save file"), "",tr("Txt(*.txt)"));
+    QFile file(fileName);
+    file.open(QIODevice::WriteOnly);
 
-    QString city_name = ui->input_city->text();
-    QString phone_kod_name = ui->input_phone->text();
-    QString district_id_name = ui->input_disctict_id->text();
+    QString textData;
+    int rows = ui->table_country->model()->rowCount();
+    int columns = ui->table_country->model()->columnCount();
 
-    add.bindValue(":city_name", city_name);
-    add.bindValue(":phone_kod_name", phone_kod_name);
-    add.bindValue(":district_id_name", district_id_name);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
 
-    if (!add.exec()) {
-        ui->text_notification->append("error pre adding new element in table city");
-    }
-
-    cityModel->select();
-}
-
-void MainWindow::on_button_delete_city_released()
-{
-    QModelIndex field = ui->table_cities->currentIndex();
-
-    if(field.isValid()){
-        QSqlRecord record = cityModel->record(field.row());
-        int Id = record.value(0).toInt();
-        QString sql = "DELETE FROM city WHERE city_id=%1;";
-        sql = sql.arg(Id);
-        QSqlQuery query(db);
-
-        if (!query.exec(sql)) {
-            ui->text_notification->append("Error pre delete element from table city");
+                textData += ui->table_country->model()->data(ui->table_country->model()->index(i,j)).toString();
+                textData += ", ";
         }
+        textData += "\n";
     }
+    qDebug() << textData;
 
-        cityModel->select();
+    QTextStream out(&file);
+    out<<textData;
+    file.close();
 }
